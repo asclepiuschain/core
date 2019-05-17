@@ -80,8 +80,9 @@ export class StateBuilder {
                 throw new Error("Non-genesis wallet with negative balance.");
             }
 
-            if (wallet.voteBalance.isLessThan(0)) {
-                this.logger.warn(`Wallet ${wallet.address} has a negative vote balance of '${wallet.voteBalance}'`);
+            const voteBalance: Utils.BigNumber = wallet.getExtraAttribute("delegate.voteBalance");
+            if (voteBalance.isLessThan(0)) {
+                this.logger.warn(`Wallet ${wallet.address} has a negative vote balance of '${voteBalance}'`);
 
                 throw new Error("Wallet with negative vote balance.");
             }

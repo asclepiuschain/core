@@ -197,9 +197,6 @@ describe("Wallet Manager", () => {
 
                 walletManager.reindex(sender);
                 walletManager.reindex(recipient);
-
-                // @ts-ignore
-                jest.spyOn(walletManager, "isDelegate").mockReturnValue(true);
             });
 
             it("should apply the transaction to the sender & recipient", async () => {

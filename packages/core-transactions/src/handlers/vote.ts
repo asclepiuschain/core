@@ -20,17 +20,13 @@ export class VoteTransactionHandler extends TransactionHandler {
         for (const transaction of transactions) {
             const wallet = walletManager.findByPublicKey(transaction.senderPublicKey);
 
-            if (!wallet.voted) {
+            if (!wallet.hasExtraAttribute("voted")) {
                 const vote = transaction.asset.votes[0];
-
                 if (vote.startsWith("+")) {
-                    wallet.vote = vote.slice(1);
+                    wallet.setExtraAttribute("vote", vote.slice(1));
                 }
 
-                // NOTE: The "voted" property is only used within this loop to avoid an issue
-                // that results in not properly applying "unvote" transactions as the "vote" property
-                // would be empty in that case and return a false result.
-                wallet.voted = true;
+                wallet.setExtraAttribute("voted", true);
             }
         }
 
@@ -42,27 +38,30 @@ export class VoteTransactionHandler extends TransactionHandler {
         wallet: State.IWallet,
         databaseWalletManager: State.IWalletManager,
     ): void {
-        const vote: string = transaction.data.asset.votes[0];
+        const { data }: Interfaces.ITransaction = transaction;
+        const vote: string = data.asset.votes[0];
+        const walletVote: string = wallet.getExtraAttribute("vote");
 
         if (vote.startsWith("+")) {
-            if (wallet.vote) {
-                throw new AlreadyVotedError(transaction.data.id);
+            if (walletVote) {
+                throw new AlreadyVotedError();
             }
         } else {
-            if (!wallet.vote) {
+            if (!walletVote) {
                 throw new NoVoteError();
-            } else if (wallet.vote !== vote.slice(1)) {
+            } else if (walletVote !== vote.slice(1)) {
                 throw new UnvoteMismatchError();
             }
         }
 
         const delegatePublicKey: string = vote.slice(1);
+        const delegateWallet: State.IWallet = databaseWalletManager.findByPublicKey(delegatePublicKey);
 
-        if (!databaseWalletManager.isDelegate(delegatePublicKey)) {
+        if (!delegateWallet.isDelegate()) {
             throw new VotedForNonDelegateError(vote);
         }
 
-        if (databaseWalletManager.findByPublicKey(delegatePublicKey).resigned) {
+        if (delegateWallet.hasExtraAttribute("delegate.resigned")) {
             throw new VotedForResignedDelegateError(vote);
         }
 
@@ -97,28 +96,28 @@ export class VoteTransactionHandler extends TransactionHandler {
         const vote: string = transaction.data.asset.votes[0];
 
         if (vote.startsWith("+")) {
-            sender.vote = vote.slice(1);
+            sender.setExtraAttribute("vote", vote.slice(1));
         } else {
-            sender.vote = undefined;
+            sender.unsetExtraAttribute("vote");
         }
     }
 
     public revertForSender(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void {
         super.revertForSender(transaction, walletManager);
 
-        const sender = walletManager.findByPublicKey(transaction.data.senderPublicKey);
+        const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
         const vote: string = transaction.data.asset.votes[0];
 
         if (vote.startsWith("+")) {
-            sender.vote = undefined;
+            sender.unsetExtraAttribute("vote");
         } else {
-            sender.vote = vote.slice(1);
+            sender.setExtraAttribute("vote", vote.slice(1));
         }
     }
 
     // tslint:disable-next-line:no-empty
-    public applyToRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void {}
+    public applyToRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void { }
 
     // tslint:disable-next-line:no-empty
-    public revertForRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void {}
+    public revertForRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void { }
 }

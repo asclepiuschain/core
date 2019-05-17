@@ -5,28 +5,26 @@ import { IRoundInfo } from "../shared";
 export interface IWallet {
     address: string;
     publicKey: string | undefined;
-    secondPublicKey: string | undefined;
     balance: Utils.BigNumber;
     nonce: Utils.BigNumber;
-    vote: string;
-    voted: boolean;
-    username: string | undefined;
-    resigned: boolean;
-    lastBlock: any;
-    voteBalance: Utils.BigNumber;
-    multisignature?: Interfaces.IMultiSignatureAsset;
-    ipfsHashes: { [ipfsHash: string]: boolean };
-    dirty: boolean;
-    producedBlocks: number;
-    forgedFees: Utils.BigNumber;
-    forgedRewards: Utils.BigNumber;
-    rate?: number;
 
     applyBlock(block: Interfaces.IBlockData): boolean;
     revertBlock(block: Interfaces.IBlockData): boolean;
 
     auditApply(transaction: Interfaces.ITransactionData): any[];
     toString(): string;
+
+    hasExtraAttribute(key: string): boolean;
+    getExtraAttribute<T>(key: string, defaultValue?: T): T;
+    setExtraAttribute(key: string, value: any);
+    unsetExtraAttribute(key: string): void;
+
+    isDelegate(): boolean;
+    hasVoted(): boolean;
+    hasSecondSignature(): boolean;
+    hasMultiSignature(): boolean;
+
+    canBePurged(): boolean;
 
     verifySignatures(
         transaction: Interfaces.ITransactionData,
@@ -35,6 +33,23 @@ export interface IWallet {
 }
 
 export type IDelegateWallet = IWallet & { rate: number; round: number };
+
+export interface IWalletDelegateAttributes {
+    username: string;
+    rank: number;
+    voteBalance: Utils.BigNumber;
+    forgedFees: Utils.BigNumber;
+    forgedRewards: Utils.BigNumber;
+    producedBlocks: number;
+    lastBlock: Interfaces.IBlockData;
+    resigned: boolean;
+}
+
+export type IWalletMultiSignatureAttributes = Interfaces.IMultiSignatureAsset;
+
+export interface IWalletIpfsAttributes {
+    [hash: string]: boolean;
+}
 
 export interface IWalletManager {
     logger: Logger.ILogger;
@@ -76,8 +91,6 @@ export interface IWalletManager {
     applyTransaction(transaction: Interfaces.ITransaction): void;
 
     revertTransaction(transaction: Interfaces.ITransaction): void;
-
-    isDelegate(publicKey: string): boolean;
 
     canBePurged(wallet: IWallet): boolean;
 

@@ -4,7 +4,7 @@ import limitRows from "./utils/limit-rows";
 import { sortEntries } from "./utils/sort-entries";
 
 export class WalletsBusinessRepository implements Database.IWalletsBusinessRepository {
-    public constructor(private readonly databaseServiceProvider: () => Database.IDatabaseService) {}
+    public constructor(private readonly databaseServiceProvider: () => Database.IDatabaseService) { }
 
     public search(params: Database.IParameters = {}): Database.IWalletsPaginated {
         const query: Record<string, string[]> = {
@@ -44,7 +44,7 @@ export class WalletsBusinessRepository implements Database.IWalletsBusinessRepos
     // @TODO: simplify this
     public findById(id: string): State.IWallet {
         return this.search().rows.find(
-            wallet => wallet.address === id || wallet.publicKey === id || wallet.username === id,
+            wallet => wallet.address === id || wallet.publicKey === id || wallet.getExtraAttribute("delegate.username") === id,
         );
     }
 

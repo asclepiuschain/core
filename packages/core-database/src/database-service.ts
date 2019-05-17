@@ -185,7 +185,10 @@ export class DatabaseService implements Database.IDatabaseService {
 
         const forgingDelegates: State.IDelegateWallet[] = delegates.map(delegate => {
             delegate.round = +delegate.round;
-            delegate.username = this.walletManager.findByPublicKey(delegate.publicKey).username;
+            const username = this.walletManager
+                .findByPublicKey(delegate.publicKey)
+                .getExtraAttribute("delegate.username");
+            delegate.setExtraAttribute("delegate.username", username);
             return delegate;
         });
 
@@ -472,7 +475,11 @@ export class DatabaseService implements Database.IDatabaseService {
                 if (producedBlocks.length === 0) {
                     const wallet: State.IWallet = this.walletManager.findByPublicKey(delegate.publicKey);
 
-                    this.logger.debug(`Delegate ${wallet.username} (${wallet.publicKey}) just missed a block.`);
+                    this.logger.debug(
+                        `Delegate ${wallet.getExtraAttribute("delegate.username")} (${
+                            wallet.publicKey
+                        }) just missed a block.`,
+                    );
 
                     this.emitter.emit(ApplicationEvents.ForgerMissing, {
                         delegate: wallet,
