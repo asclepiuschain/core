@@ -30,7 +30,7 @@ export const transformBlock = (model, transform) => {
             length: model.payloadLength,
         },
         generator: {
-            username: generator.username,
+            username: generator.getExtraAttribute("delegate.username"),
             address: generator.address,
             publicKey: generator.publicKey,
         },

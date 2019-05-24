@@ -250,7 +250,8 @@ export class ForgerManager {
         this.round = await this.client.getRound();
 
         this.usernames = this.round.delegates.reduce(
-            (acc, delegate) => Object.assign(acc, { [delegate.publicKey]: delegate.username }),
+            (acc, delegate) =>
+                Object.assign(acc, { [delegate.publicKey]: delegate.getExtraAttribute("delegate.username") }),
             {},
         );
 

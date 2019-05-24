@@ -1,10 +1,10 @@
 import { app } from "@arkecosystem/core-container";
-import { Blockchain } from "@arkecosystem/core-interfaces";
+import { Blockchain, State } from "@arkecosystem/core-interfaces";
 import { Utils } from "@arkecosystem/crypto";
 
 const BignumMod = Utils.BigNumber.clone({ DECIMAL_PLACES: 2 });
 
-export const calculateApproval = (delegate, height?: number): number => {
+export const calculateApproval = (delegate: State.IWallet, height?: number): number => {
     const config = app.getConfig();
 
     if (!height) {
@@ -15,7 +15,7 @@ export const calculateApproval = (delegate, height?: number): number => {
     const totalSupply = new BignumMod(config.get("genesisBlock.totalAmount")).plus(
         (height - constants.height) * constants.reward,
     );
-    const voteBalance = new BignumMod(delegate.voteBalance);
+    const voteBalance = new BignumMod(delegate.getExtraAttribute<Utils.BigNumber>("delegate.voteBalance"));
 
     return +voteBalance
         .times(100)
@@ -23,9 +23,9 @@ export const calculateApproval = (delegate, height?: number): number => {
         .toFixed(2);
 };
 
-export const calculateForgedTotal = (delegate): number => {
-    const forgedFees = Utils.BigNumber.make(delegate.forgedFees);
-    const forgedRewards = Utils.BigNumber.make(delegate.forgedRewards);
+export const calculateForgedTotal = (delegate: State.IWallet): number => {
+    const forgedFees = Utils.BigNumber.make(delegate.getExtraAttribute("delegate.forgedFees"));
+    const forgedRewards = Utils.BigNumber.make(delegate.getExtraAttribute("delegate.forgedRewards"));
 
     return +forgedFees.plus(forgedRewards).toFixed();
 };
