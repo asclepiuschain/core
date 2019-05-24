@@ -81,7 +81,7 @@ export class StateBuilder {
             }
 
             const voteBalance: Utils.BigNumber = wallet.getExtraAttribute("delegate.voteBalance");
-            if (voteBalance.isLessThan(0)) {
+            if (voteBalance && voteBalance.isLessThan(0)) {
                 this.logger.warn(`Wallet ${wallet.address} has a negative vote balance of '${voteBalance}'`);
 
                 throw new Error("Wallet with negative vote balance.");

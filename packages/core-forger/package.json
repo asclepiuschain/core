@@ -26,6 +26,7 @@
         "@arkecosystem/core-interfaces": "^2.4.0-next.8",
         "@arkecosystem/core-p2p": "^2.4.0-next.8",
         "@arkecosystem/core-utils": "^2.4.0-next.8",
+        "@arkecosystem/state": "^2.4.0-next.8",
         "@arkecosystem/crypto": "^2.4.0-next.8",
         "delay": "^4.2.0",
         "lodash.isempty": "^4.4.0",

@@ -1,6 +1,7 @@
 import { app } from "@arkecosystem/core-container";
 import { ApplicationEvents } from "@arkecosystem/core-event-emitter";
 import { Database, EventEmitter, Logger, Shared, State } from "@arkecosystem/core-interfaces";
+import { Wallets } from "@arkecosystem/core-state";
 import { Handlers } from "@arkecosystem/core-transactions";
 import { roundCalculator } from "@arkecosystem/core-utils";
 import { Blocks, Crypto, Identities, Interfaces, Managers, Transactions, Utils } from "@arkecosystem/crypto";
@@ -165,9 +166,12 @@ export class DatabaseService implements Database.IDatabaseService {
 
         // When called during applyRound we already know the delegates, so we don't have to query the database.
         if (!delegates || delegates.length === 0) {
-            delegates = ((await this.connection.roundsRepository.findById(
-                round,
-            )) as unknown) as State.IDelegateWallet[];
+            delegates = ((await this.connection.roundsRepository.findById(round)).map(round =>
+                Object.assign(new Wallets.Wallet(Identities.Address.fromPublicKey(round.publicKey)), {
+                    ...round,
+                    extraAttributes: { delegate: {} },
+                }),
+            ) as unknown) as State.IDelegateWallet[];
         }
 
         const seedSource: string = round.toString();

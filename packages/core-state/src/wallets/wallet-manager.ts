@@ -212,7 +212,7 @@ export class WalletManager implements State.IWalletManager {
             if (applied && delegate.hasVoted()) {
                 const increase: Utils.BigNumber = block.data.reward.plus(block.data.totalFee);
                 const votedDelegate: State.IWallet = this.byPublicKey[delegate.getExtraAttribute<string>("vote")];
-                const voteBalance: Utils.BigNumber = votedDelegate.getExtraAttribute("delegate.voteBalace");
+                const voteBalance: Utils.BigNumber = votedDelegate.getExtraAttribute("delegate.voteBalance");
                 votedDelegate.setExtraAttribute("delegate.voteBalance", voteBalance.plus(increase));
             }
         } catch (error) {
