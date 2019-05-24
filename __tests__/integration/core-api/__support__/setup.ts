@@ -1,5 +1,6 @@
 import { app } from "@arkecosystem/core-container";
 import { Database, State } from "@arkecosystem/core-interfaces";
+import { Utils } from "@arkecosystem/crypto";
 import delay from "delay";
 import { defaults } from "../../../../packages/core-api/src/defaults";
 import { plugin } from "../../../../packages/core-api/src/plugin";
@@ -55,12 +56,12 @@ const calculateRanks = async () => {
     const databaseService = app.resolvePlugin<Database.IDatabaseService>("database");
 
     const delegateWallets = Object.values(databaseService.walletManager.allByUsername()).sort(
-        (a: State.IWallet, b: State.IWallet) => b.voteBalance.comparedTo(a.voteBalance),
+        (a: State.IWallet, b: State.IWallet) => b.getExtraAttribute<Utils.BigNumber>("delegate.voteBalance").comparedTo(a.getExtraAttribute<Utils.BigNumber>("delegate.voteBalance")),
     );
 
     sortBy(delegateWallets, "publicKey").forEach((delegate, i) => {
         const wallet = databaseService.walletManager.findByPublicKey(delegate.publicKey);
-        (wallet as any).rate = i + 1;
+        wallet.setExtraAttribute("delegate.rate", i + 1);
 
         databaseService.walletManager.reindex(wallet);
     });
