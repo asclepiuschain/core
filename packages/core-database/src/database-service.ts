@@ -647,7 +647,8 @@ export class DatabaseService implements Database.IDatabaseService {
         const delegates: State.IDelegateWallet[] = tempWalletManager.loadActiveDelegateList(roundInfo);
 
         for (const delegate of tempWalletManager.allByUsername()) {
-            this.walletManager.findByUsername(delegate.username).rate = delegate.rate;
+            const delegateWallet = this.walletManager.findByUsername(delegate.getExtraAttribute("delegate.username"));
+            delegateWallet.setExtraAttribute("delegate.rank", delegate.getExtraAttribute("delegate.rank"));
         }
 
         return delegates;

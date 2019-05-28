@@ -43,7 +43,7 @@ export class UnexpectedNonceError extends TransactionError {
         const action: string = reversal ? "revert" : "apply";
         super(
             `Cannot ${action} a transaction with nonce ${txNonce.toFixed()}: the ` +
-            `corresponding sender wallet has nonce ${walletNonce.toFixed()}.`
+                `corresponding sender wallet has nonce ${walletNonce.toFixed()}.`,
         );
     }
 }
@@ -120,8 +120,8 @@ export class NotSupportedForMultiSignatureWalletError extends TransactionError {
 }
 
 export class AlreadyVotedError extends TransactionError {
-    constructor(transactionId: string) {
-        super(`Failed to apply transaction ${transactionId}, because the sender wallet has already voted.`);
+    constructor() {
+        super(`Failed to apply transaction, because the sender wallet has already voted.`);
     }
 }
 
