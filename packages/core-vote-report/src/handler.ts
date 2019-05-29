@@ -32,7 +32,7 @@ const formatDelegates = (
             },
         );
 
-        const rank: string = delegate.getExtraAttribute<number>("delegate.rate").toLocaleString(undefined, {
+        const rank: string = delegate.getExtraAttribute<number>("delegate.rank").toLocaleString(undefined, {
             minimumIntegerDigits: 2,
         });
 
@@ -68,10 +68,10 @@ export const handler = (request, h) => {
     const allByUsername: State.IWallet[] = databaseService.walletManager
         .allByUsername()
         .map((delegate, index) => {
-            delegate.setExtraAttribute("delegate.rate", delegate.getExtraAttribute("rate") || index + 1);
+            delegate.setExtraAttribute("delegate.rank", delegate.getExtraAttribute("rate") || index + 1);
             return delegate;
         })
-        .sort((a, b) => a.getExtraAttribute<number>("delegate.rate") - b.getExtraAttribute<number>("delegate.rate"));
+        .sort((a, b) => a.getExtraAttribute<number>("delegate.rank") - b.getExtraAttribute<number>("delegate.rank"));
 
     const active: State.IWallet[] = allByUsername.slice(0, maxDelegates);
     const standby: State.IWallet[] = allByUsername.slice(

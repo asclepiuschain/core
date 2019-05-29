@@ -61,7 +61,7 @@ const calculateRanks = async () => {
 
     sortBy(delegateWallets, "publicKey").forEach((delegate, i) => {
         const wallet = databaseService.walletManager.findByPublicKey(delegate.publicKey);
-        wallet.setExtraAttribute("delegate.rate", i + 1);
+        wallet.setExtraAttribute("delegate.rank", i + 1);
 
         databaseService.walletManager.reindex(wallet);
     });

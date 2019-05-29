@@ -129,7 +129,7 @@ export class ReplayBlockchain extends Blockchain {
         this.state.setLastBlock(genesisBlock);
 
         const roundInfo: Shared.IRoundInfo = roundCalculator.calculateRound(1);
-        const delegates: State.IDelegateWallet[] = this.walletManager.loadActiveDelegateList(roundInfo);
+        const delegates: State.IWallet[] = this.walletManager.loadActiveDelegateList(roundInfo);
 
         (this.localDatabase as any).forgingDelegates = await this.localDatabase.getActiveDelegates(
             roundInfo,

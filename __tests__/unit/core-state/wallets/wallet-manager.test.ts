@@ -536,7 +536,7 @@ describe("Wallet Manager", () => {
 
             for (let i = 0; i < 5; i++) {
                 const delegate = delegates[i];
-                expect(delegate.rate).toEqual(i + 1);
+                expect(delegate.rank).toEqual(i + 1);
                 expect(delegate.voteBalance).toEqual(Utils.BigNumber.make((5 - i) * 1000 * SATOSHI));
             }
         });

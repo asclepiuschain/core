@@ -29,6 +29,7 @@ export class DelegateRegistrationTransactionHandler extends TransactionHandler {
                 forgedFees: Utils.BigNumber.ZERO,
                 forgedRewards: Utils.BigNumber.ZERO,
                 producedBlocks: 0,
+                round: 0,
             } as State.IWalletDelegateAttributes);
 
             walletManager.reindex(wallet);
@@ -44,7 +45,7 @@ export class DelegateRegistrationTransactionHandler extends TransactionHandler {
             }
 
             delegate.forgedFees = delegate.forgedFees.plus(block.totalFees);
-            delegate.forgedRewards = delegate.forgedRewards.plus(block.forgedRewards);
+            delegate.forgedRewards = delegate.forgedRewards.plus(block.totalRewards);
             delegate.producedBlocks += +block.totalProduced;
         }
 
@@ -130,7 +131,14 @@ export class DelegateRegistrationTransactionHandler extends TransactionHandler {
         super.applyToSender(transaction, walletManager);
 
         const sender: State.IWallet = walletManager.findByPublicKey(transaction.data.senderPublicKey);
-        sender.setExtraAttribute("delegate.username", transaction.data.asset.delegate.username);
+        sender.setExtraAttribute("delegate", {
+            username: transaction.data.asset.delegate.username,
+            voteBalance: Utils.BigNumber.ZERO,
+            forgedFees: Utils.BigNumber.ZERO,
+            forgedRewards: Utils.BigNumber.ZERO,
+            producedBlocks: 0,
+            round: 0,
+        });
 
         walletManager.reindex(sender);
     }
@@ -146,8 +154,8 @@ export class DelegateRegistrationTransactionHandler extends TransactionHandler {
     }
 
     // tslint:disable-next-line:no-empty
-    public applyToRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void {}
+    public applyToRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void { }
 
     // tslint:disable-next-line:no-empty
-    public revertForRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void {}
+    public revertForRecipient(transaction: Interfaces.ITransaction, walletManager: State.IWalletManager): void { }
 }

@@ -21,7 +21,7 @@ export class DatabaseService implements Database.IDatabaseService {
     public blocksInCurrentRound: Interfaces.IBlock[] = undefined;
     public stateStarted: boolean = false;
     public restoredDatabaseIntegrity: boolean = false;
-    public forgingDelegates: State.IDelegateWallet[] = undefined;
+    public forgingDelegates: State.IWallet[] = undefined;
     public cache: Map<any, any> = new Map();
 
     constructor(
@@ -96,7 +96,7 @@ export class DatabaseService implements Database.IDatabaseService {
                 nextHeight === 1 ||
                 !this.forgingDelegates ||
                 this.forgingDelegates.length === 0 ||
-                this.forgingDelegates[0].round !== round
+                this.forgingDelegates[0].getExtraAttribute<number>("delegate.round") !== round
             ) {
                 this.logger.info(`Starting Round ${roundInfo.round.toLocaleString()}`);
 
@@ -105,7 +105,7 @@ export class DatabaseService implements Database.IDatabaseService {
                         this.updateDelegateStats(this.forgingDelegates);
                     }
 
-                    const delegates: State.IDelegateWallet[] = this.walletManager.loadActiveDelegateList(roundInfo);
+                    const delegates: State.IWallet[] = this.walletManager.loadActiveDelegateList(roundInfo);
 
                     await this.saveRound(delegates);
                     await this.setForgingDelegatesOfRound(roundInfo, delegates);
@@ -156,29 +156,37 @@ export class DatabaseService implements Database.IDatabaseService {
 
     public async getActiveDelegates(
         roundInfo: Shared.IRoundInfo,
-        delegates?: State.IDelegateWallet[],
-    ): Promise<State.IDelegateWallet[]> {
+        delegates?: State.IWallet[],
+    ): Promise<State.IWallet[]> {
         const { round } = roundInfo;
 
-        if (this.forgingDelegates && this.forgingDelegates.length && this.forgingDelegates[0].round === round) {
+        if (this.forgingDelegates && this.forgingDelegates.length && this.forgingDelegates[0].getExtraAttribute<number>("delegate.round") === round) {
             return this.forgingDelegates;
         }
 
         // When called during applyRound we already know the delegates, so we don't have to query the database.
         if (!delegates || delegates.length === 0) {
-            delegates = ((await this.connection.roundsRepository.findById(round)).map(round =>
-                Object.assign(new Wallets.Wallet(Identities.Address.fromPublicKey(round.publicKey)), {
-                    ...round,
-                    extraAttributes: { delegate: {} },
+            delegates = ((await this.connection.roundsRepository.findById(round)).map(({ round, publicKey, balance }) =>
+                Object.assign(new Wallets.Wallet(Identities.Address.fromPublicKey(publicKey)), {
+                    publicKey,
+                    extraAttributes: {
+                        delegate: {
+                            round: +round,
+                            voteBalance: Utils.BigNumber.make(balance),
+                            username: this.walletManager
+                                .findByPublicKey(publicKey)
+                                .getExtraAttribute("delegate.username")
+                        }
+                    },
                 }),
-            ) as unknown) as State.IDelegateWallet[];
+            ));
         }
 
         const seedSource: string = round.toString();
         let currentSeed: Buffer = Crypto.HashAlgorithms.sha256(seedSource);
 
         for (let i = 0, delCount = delegates.length; i < delCount; i++) {
-            for (let x = 0; x < 4 && i < delCount; i++, x++) {
+            for (let x = 0; x < 4 && i < delCount; i++ , x++) {
                 const newIndex = currentSeed[x] % delCount;
                 const b = delegates[newIndex];
                 delegates[newIndex] = delegates[i];
@@ -187,16 +195,7 @@ export class DatabaseService implements Database.IDatabaseService {
             currentSeed = Crypto.HashAlgorithms.sha256(currentSeed);
         }
 
-        const forgingDelegates: State.IDelegateWallet[] = delegates.map(delegate => {
-            delegate.round = +delegate.round;
-            const username = this.walletManager
-                .findByPublicKey(delegate.publicKey)
-                .getExtraAttribute("delegate.username");
-            delegate.setExtraAttribute("delegate.username", username);
-            return delegate;
-        });
-
-        return forgingDelegates;
+        return delegates;
     }
 
     public async getBlock(id: string): Promise<Interfaces.IBlock | undefined> {
@@ -451,15 +450,15 @@ export class DatabaseService implements Database.IDatabaseService {
         await this.connection.saveBlocks(blocks);
     }
 
-    public async saveRound(activeDelegates: State.IDelegateWallet[]): Promise<void> {
-        this.logger.info(`Saving round ${activeDelegates[0].round.toLocaleString()}`);
+    public async saveRound(activeDelegates: State.IWallet[]): Promise<void> {
+        this.logger.info(`Saving round ${activeDelegates[0].getExtraAttribute("delegate.round").toLocaleString()}`);
 
         await this.connection.roundsRepository.insert(activeDelegates);
 
         this.emitter.emit(ApplicationEvents.RoundCreated, activeDelegates);
     }
 
-    public updateDelegateStats(delegates: State.IDelegateWallet[]): void {
+    public updateDelegateStats(delegates: State.IWallet[]): void {
         if (!delegates || !this.blocksInCurrentRound) {
             return;
         }
@@ -481,7 +480,7 @@ export class DatabaseService implements Database.IDatabaseService {
 
                     this.logger.debug(
                         `Delegate ${wallet.getExtraAttribute("delegate.username")} (${
-                            wallet.publicKey
+                        wallet.publicKey
                         }) just missed a block.`,
                     );
 
@@ -531,7 +530,7 @@ export class DatabaseService implements Database.IDatabaseService {
         if (blockStats.numberOfTransactions !== transactionStats.count) {
             errors.push(
                 `Number of transactions: ${transactionStats.count}, number of transactions included in blocks: ${
-                    blockStats.numberOfTransactions
+                blockStats.numberOfTransactions
                 }`,
             );
         }
@@ -540,7 +539,7 @@ export class DatabaseService implements Database.IDatabaseService {
         if (blockStats.totalFee !== transactionStats.totalFee) {
             errors.push(
                 `Total transaction fees: ${transactionStats.totalFee}, total of block.totalFee : ${
-                    blockStats.totalFee
+                blockStats.totalFee
                 }`,
             );
         }
@@ -549,7 +548,7 @@ export class DatabaseService implements Database.IDatabaseService {
         if (blockStats.totalAmount !== transactionStats.totalAmount) {
             errors.push(
                 `Total transaction amounts: ${transactionStats.totalAmount}, total of block.totalAmount : ${
-                    blockStats.totalAmount
+                blockStats.totalAmount
                 }`,
             );
         }
@@ -616,7 +615,7 @@ export class DatabaseService implements Database.IDatabaseService {
 
     private async setForgingDelegatesOfRound(
         roundInfo: Shared.IRoundInfo,
-        delegates?: State.IDelegateWallet[],
+        delegates?: State.IWallet[],
     ): Promise<void> {
         this.forgingDelegates = await this.getActiveDelegates(roundInfo, delegates);
     }
@@ -624,7 +623,7 @@ export class DatabaseService implements Database.IDatabaseService {
     private async calcPreviousActiveDelegates(
         roundInfo: Shared.IRoundInfo,
         blocks?: Interfaces.IBlock[],
-    ): Promise<State.IDelegateWallet[]> {
+    ): Promise<State.IWallet[]> {
         blocks = blocks || (await this.getBlocksForRound(roundInfo));
 
         const tempWalletManager = this.walletManager.cloneDelegateWallets();
@@ -643,15 +642,14 @@ export class DatabaseService implements Database.IDatabaseService {
             tempWalletManager.revertBlock(blocks[i]);
         }
 
-        // Now retrieve the active delegate list from the temporary wallet manager.
-        const delegates: State.IDelegateWallet[] = tempWalletManager.loadActiveDelegateList(roundInfo);
+        const delegates: State.IWallet[] = tempWalletManager.loadActiveDelegateList(roundInfo);
 
         for (const delegate of tempWalletManager.allByUsername()) {
             const delegateWallet = this.walletManager.findByUsername(delegate.getExtraAttribute("delegate.username"));
             delegateWallet.setExtraAttribute("delegate.rank", delegate.getExtraAttribute("delegate.rank"));
-        }
+        };
 
-        return delegates;
+        return delegates.map(delegate => this.walletManager.findByPublicKey(delegate.publicKey));
     }
 
     private emitTransactionEvents(transaction: Interfaces.ITransaction): void {

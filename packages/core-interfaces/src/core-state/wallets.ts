@@ -32,8 +32,6 @@ export interface IWallet {
     ): boolean;
 }
 
-export type IDelegateWallet = IWallet & { rate: number; round: number };
-
 export interface IWalletDelegateAttributes {
     username: string;
     rank: number;
@@ -42,6 +40,7 @@ export interface IWalletDelegateAttributes {
     forgedRewards: Utils.BigNumber;
     producedBlocks: number;
     lastBlock: Interfaces.IBlockData;
+    round: number;
     resigned: boolean;
 }
 
@@ -78,13 +77,13 @@ export interface IWalletManager {
 
     cloneDelegateWallets(): IWalletManager;
 
-    loadActiveDelegateList(roundInfo: IRoundInfo): IDelegateWallet[];
+    loadActiveDelegateList(roundInfo: IRoundInfo): IWallet[];
 
     buildVoteBalances(): void;
 
     applyBlock(block: Interfaces.IBlock): void;
 
-    buildDelegateRanking(roundInfo?: Shared.IRoundInfo): IDelegateWallet[];
+    buildDelegateRanking(roundInfo?: Shared.IRoundInfo): IWallet[];
 
     revertBlock(block: Interfaces.IBlock): void;
 

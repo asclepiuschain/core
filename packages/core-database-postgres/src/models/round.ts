@@ -12,8 +12,10 @@ export class Round extends Model {
         },
         {
             name: "balance",
-            prop: "voteBalance",
-            init: col => Utils.BigNumber.make(col.value).toFixed(),
+            prop: "extraAttributes.delegate.voteBalance",
+            init: col => {
+                return Utils.BigNumber.make(col.value.delegate.voteBalance).toFixed()
+            },
             supportedOperators: [
                 Database.SearchOperator.OP_EQ,
                 Database.SearchOperator.OP_LTE,
@@ -22,8 +24,10 @@ export class Round extends Model {
         },
         {
             name: "round",
-            prop: "extraAttributes",
-            init: col => col.value.delegate.round,
+            prop: "extraAttributes.delegate.round",
+            init: col => {
+                return col.value.delegate.round
+            },
             supportedOperators: [
                 Database.SearchOperator.OP_EQ,
                 Database.SearchOperator.OP_LTE,

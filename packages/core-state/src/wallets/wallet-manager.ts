@@ -136,20 +136,20 @@ export class WalletManager implements State.IWalletManager {
         return walletManager;
     }
 
-    public loadActiveDelegateList(roundInfo: Shared.IRoundInfo): State.IDelegateWallet[] {
+    public loadActiveDelegateList(roundInfo: Shared.IRoundInfo): State.IWallet[] {
         const delegates: State.IWallet[] = this.buildDelegateRanking(roundInfo);
         const { maxDelegates } = roundInfo;
 
         if (delegates.length < maxDelegates) {
             throw new Error(
                 `Expected to find ${maxDelegates} delegates but only found ${delegates.length}. ` +
-                    `This indicates an issue with the genesis block & delegates.`,
+                `This indicates an issue with the genesis block & delegates.`,
             );
         }
 
         this.logger.debug(`Loaded ${delegates.length} active ${pluralize("delegate", delegates.length)}`);
 
-        return delegates as State.IDelegateWallet[];
+        return delegates as State.IWallet[];
     }
 
     // Only called during integrity verification on boot.
@@ -252,7 +252,7 @@ export class WalletManager implements State.IWalletManager {
             if (reverted && delegate.hasVoted()) {
                 const decrease: Utils.BigNumber = block.data.reward.plus(block.data.totalFee);
                 const votedDelegate: State.IWallet = this.byPublicKey[delegate.getExtraAttribute<string>("vote")];
-                const voteBalance: Utils.BigNumber = votedDelegate.getExtraAttribute("delegate.voteBalace");
+                const voteBalance: Utils.BigNumber = votedDelegate.getExtraAttribute("delegate.voteBalance");
                 votedDelegate.setExtraAttribute("delegate.voteBalance", voteBalance.minus(decrease));
             }
         } catch (error) {
@@ -304,7 +304,7 @@ export class WalletManager implements State.IWalletManager {
         this.byUsername = {};
     }
 
-    public buildDelegateRanking(roundInfo?: Shared.IRoundInfo): State.IDelegateWallet[] {
+    public buildDelegateRanking(roundInfo?: Shared.IRoundInfo): State.IWallet[] {
         const delegates: State.IWallet[] = this.allByUsername().filter(
             (wallet: State.IWallet) => !wallet.hasExtraAttribute("delegate.resigned"),
         );
@@ -339,10 +339,11 @@ export class WalletManager implements State.IWalletManager {
 
                 return diff;
             })
-            .map((delegate, i) => {
+            .map((delegate, i): State.IWallet => {
                 const rate = i + 1;
-                delegate.setExtraAttribute("delegate.rate", rate);
-                return { round: roundInfo ? roundInfo.round : 0, ...delegate, rate };
+                delegate.setExtraAttribute("delegate.rank", rate)
+                delegate.setExtraAttribute("delegate.round", roundInfo ? roundInfo.round : 0);
+                return delegate;
             });
 
         if (roundInfo) {
@@ -401,7 +402,7 @@ export class WalletManager implements State.IWalletManager {
             }
 
             // Update vote balance of recipient's delegate
-            if (recipient.hasVoted()) {
+            if (recipient && recipient.hasVoted()) {
                 const delegate: State.IWallet = this.findByPublicKey(recipient.getExtraAttribute("vote"));
                 const voteBalance: Utils.BigNumber = delegate.getExtraAttribute(
                     "delegate.voteBalance",
