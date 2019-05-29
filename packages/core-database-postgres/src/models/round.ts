@@ -22,6 +22,8 @@ export class Round extends Model {
         },
         {
             name: "round",
+            prop: "extraAttributes",
+            init: col => col.value.delegate.round,
             supportedOperators: [
                 Database.SearchOperator.OP_EQ,
                 Database.SearchOperator.OP_LTE,
